@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from '../hooks/useLocation';
 
 type GpsData = {
@@ -10,40 +10,248 @@ type GpsData = {
   altitude: number | null;
 };
 
+// Define GeolocationPositionError interface if needed
+interface GeolocationErrorWithCode {
+  code: number;
+  message: string;
+}
+
 const GpsPage = () => {
   const [gpsData, setGpsData] = useState<GpsData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const { getCurrentLocation } = useLocation();
+  const [loading, setLoading] = useState(false);
+  const [permissionState, setPermissionState] = useState<PermissionState | null>(null);
+  const [isWatching, setIsWatching] = useState(false);
+  const watchIdRef = useRef<number | null>(null);
+  
+  const { watchPosition, clearWatch } = useLocation();
 
-  useEffect(() => {
-    const getGpsData = async () => {
-      try {
-        setLoading(true);
-        const position = await getCurrentLocation();
-        
-        setGpsData({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy, // Horizontal accuracy in meters (equivalent to HDOP)
-          timestamp: position.timestamp,
-          speed: position.coords.speed,
-          altitude: position.coords.altitude,
-        });
-      } catch (err) {
-        console.error('Error getting GPS data:', err);
+  // Use refs to solve circular dependencies between functions
+  const updateGpsData = useCallback((position: GeolocationPosition) => {
+    setGpsData({
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+      accuracy: position.coords.accuracy, // Horizontal accuracy in meters (equivalent to HDOP)
+      timestamp: position.timestamp,
+      speed: position.coords.speed,
+      altitude: position.coords.altitude,
+    });
+  }, []);
+  
+  const handleLocationError = useCallback((err: unknown) => {
+    console.error('Error getting GPS data:', err);
+    
+    // Handle specific error codes from GeolocationPositionError
+    if (err && typeof err === 'object' && 'code' in err) {
+      const geoError = err as GeolocationErrorWithCode;
+      
+      if (geoError.code === 1) { // PERMISSION_DENIED
+        setError('Location permission denied. Please enable location services for this website in your browser settings.');
+      } else if (geoError.code === 2) { // POSITION_UNAVAILABLE
+        setError('Unable to determine your location. Please make sure your device has GPS enabled and try again.');
+      } else if (geoError.code === 3) { // TIMEOUT
+        setError('Location request timed out. Please try again.');
+      } else {
         setError('Failed to get GPS data. Please make sure location services are enabled.');
-      } finally {
-        setLoading(false);
+      }
+    } else {
+      setError('An unknown error occurred while trying to get your location.');
+    }
+  }, []);
+  
+  // Store these callbacks in refs to avoid dependency issues
+  const updateGpsDataRef = useRef(updateGpsData);
+  const handleLocationErrorRef = useRef(handleLocationError);
+  
+  // Keep the refs updated when the callbacks change
+  useEffect(() => {
+    updateGpsDataRef.current = updateGpsData;
+    handleLocationErrorRef.current = handleLocationError;
+  }, [updateGpsData, handleLocationError]);
+
+  const getGpsData = useCallback(async () => {
+    setError(null);
+    setLoading(true);
+    
+    // Check if we're in a secure context
+    if (!window.isSecureContext) {
+      setError("Geolocation requires a secure context (HTTPS). Please access this site using HTTPS.");
+      setLoading(false);
+      return;
+    }
+    
+    // Force a permission prompt by directly trying to get location
+    if (!navigator.geolocation) {
+      setError("Geolocation is not supported by this browser.");
+      setLoading(false);
+      return;
+    }
+    
+    try {
+      console.log("Requesting geolocation permission...");
+      // Use direct navigator.geolocation call to ensure permission prompt appears
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          console.log("Position received:", position);
+          updateGpsDataRef.current(position);
+          setLoading(false);
+        },
+        (error) => {
+          console.error("Geolocation error:", error);
+          handleLocationErrorRef.current(error);
+          
+          // Help user with additional information for permission denied
+          if (error.code === 1) {
+            console.log("Showing special instructions for permission denied");
+            // On mobile, provide specific instructions based on platform
+            if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+              setError("Location access was denied. On iOS, go to Settings > Safari > Location to enable access.");
+            } else if (/Android/i.test(navigator.userAgent)) {
+              setError("Location access was denied. On Android, go to Settings > Site Settings > Location to enable access.");
+            } else {
+              setError("Location access was denied. Click the location icon in your browser's address bar and allow access.");
+            }
+          }
+          
+          setLoading(false);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      handleLocationErrorRef.current(err);
+      setLoading(false);
+    }
+  }, []);
+
+  // Check geolocation permission status
+  useEffect(() => {
+    // Check if we're in a secure context first
+    if (!window.isSecureContext) {
+      console.warn("Geolocation API requires a secure context (HTTPS)");
+      setError("This app requires HTTPS to access your location. Please use a secure connection.");
+      return;
+    }
+    
+    const directGeolocationRequest = () => {
+      if (navigator.geolocation) {
+        try {
+          console.log("Initial geolocation permission check...");
+          navigator.geolocation.getCurrentPosition(
+            () => {
+              console.log("Geolocation permission granted on initial check");
+              setPermissionState('granted');
+            },
+            (error) => {
+              console.log("Initial geolocation check error:", error);
+              if (error.code === 1) {
+                setPermissionState('denied');
+              } else if (error.code === 2) {
+                setPermissionState('prompt');
+              }
+            },
+            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+          );
+        } catch (err) {
+          console.error("Error in initial geolocation check:", err);
+        }
       }
     };
+    
+    // Only do the check, but don't automatically get GPS data
+    directGeolocationRequest();
+    
+    // Then check with Permissions API if available
+    const checkPermission = async () => {
+      if (!navigator.permissions || !navigator.permissions.query) {
+        return;
+      }
+      
+      try {
+        const result = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
+        setPermissionState(result.state);
+        
+        result.addEventListener('change', () => {
+          console.log("Permission state changed:", result.state);
+          setPermissionState(result.state);
+        });
+      } catch (err) {
+        console.error('Error checking geolocation permission:', err);
+      }
+    };
+    
+    checkPermission();
+    
+    // Clean up any watches when component unmounts
+    return () => {
+      if (watchIdRef.current !== null) {
+        clearWatch(watchIdRef.current);
+      }
+    };
+  }, [clearWatch]);
 
-    getGpsData();
-  }, []);
+  const toggleWatchPosition = useCallback(() => {
+    if (isWatching && watchIdRef.current !== null) {
+      // Stop watching
+      clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+      setIsWatching(false);
+    } else {
+      // Start watching
+      setError(null);
+      setLoading(true);
+      
+      try {
+        const watchId = watchPosition(
+          (position) => {
+            updateGpsDataRef.current(position);
+            setLoading(false);
+          },
+          (err) => {
+            handleLocationErrorRef.current(err);
+            setLoading(false);
+            setIsWatching(false);
+          },
+          { enableHighAccuracy: true }
+        );
+        
+        watchIdRef.current = watchId;
+        setIsWatching(true);
+      } catch (err) {
+        handleLocationErrorRef.current(err);
+        setLoading(false);
+      }
+    }
+  }, [isWatching, clearWatch, watchPosition]);
 
   // Check if we're running on a mobile device
   const isMobileDevice = () => {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  };
+
+  const renderPermissionStatus = () => {
+    if (!permissionState) return null;
+    
+    switch (permissionState) {
+      case 'denied':
+        return (
+          <div className="permission-status denied">
+            <p>Location permission has been denied. Please update your browser settings to allow location access.</p>
+          </div>
+        );
+      case 'prompt':
+        return (
+          <div className="permission-status prompt">
+            <p>Please allow location access when prompted to view your GPS data.</p>
+          </div>
+        );
+      default:
+        return null;
+    }
   };
 
   if (!isMobileDevice()) {
@@ -59,7 +267,26 @@ const GpsPage = () => {
     <div className="gps-page">
       <h1>GPS Data</h1>
       
-      {loading && <p>Loading GPS data...</p>}
+      {!window.isSecureContext && (
+        <div className="security-warning">
+          <p className="error">
+            <strong>Security Notice:</strong> Location services require a secure connection (HTTPS).
+            {window.location.protocol === 'http:' && 
+              ` Try accessing this site via HTTPS: ${window.location.href.replace('http:', 'https:')}`
+            }
+          </p>
+        </div>
+      )}
+      
+      {renderPermissionStatus()}
+      
+      {!gpsData && !loading && !error && (
+        <div className="info-box">
+          <p>To show your GPS location, tap the button below and allow location access when prompted.</p>
+        </div>
+      )}
+      
+      {loading && <p className="loading">Loading GPS data...</p>}
       
       {error && <p className="error">{error}</p>}
       
@@ -78,12 +305,36 @@ const GpsPage = () => {
         </div>
       )}
 
-      <button 
-        onClick={() => window.location.reload()}
-        disabled={loading}
-      >
-        Refresh GPS Data
-      </button>
+      <div className="button-group">
+        <button 
+          onClick={getGpsData}
+          disabled={loading || isWatching}
+          className="primary-button get-gps-button"
+          aria-label="Get location data"
+        >
+          {gpsData ? 'Refresh GPS Data' : 'Get My Location'}
+        </button>
+        
+        {gpsData && (
+          <button
+            onClick={toggleWatchPosition}
+            disabled={loading}
+            className={`primary-button ${isWatching ? 'active' : ''}`}
+            style={{ marginTop: '10px' }}
+            aria-label={isWatching ? 'Stop tracking location' : 'Start tracking location'}
+          >
+            {isWatching ? 'Stop Tracking Location' : 'Track Location (Live)'}
+          </button>
+        )}
+      </div>
+      
+      {gpsData && !isWatching && (
+        <p className="timestamp">Last updated: {new Date().toLocaleString()}</p>
+      )}
+      
+      {isWatching && (
+        <p className="live-indicator">LIVE: Automatically updating position</p>
+      )}
     </div>
   );
 };
