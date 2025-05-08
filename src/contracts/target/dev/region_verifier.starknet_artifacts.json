@@ -1,0 +1,1 @@
+{"version":1,"contracts":[{"id":"mdkmt7miideo4","package_name":"grp","contract_name":"UltraKeccakZKHonkVerifier","module_path":"grp::honk_verifier::UltraKeccakZKHonkVerifier","artifacts":{"sierra":"region_verifier_UltraKeccakZKHonkVerifier.contract_class.json","casm":"region_verifier_UltraKeccakZKHonkVerifier.compiled_contract_class.json"}}]}
