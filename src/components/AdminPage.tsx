@@ -63,6 +63,8 @@ const AdminPage: React.FC = () => {
     try {
       // 1. Load contract class artifact dynamically (works in browser)
       const contractClass = (await import('../contracts/target/dev/region_verifier_UltraKeccakZKHonkVerifier.contract_class.json')).default;
+      // Also load compiled contract class (casm)
+      const compiledContractClass = (await import('../contracts/target/dev/region_verifier_UltraKeccakZKHonkVerifier.compiled_contract_class.json')).default;
 
       // 2. Connect to Bravo wallet
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -76,7 +78,10 @@ const AdminPage: React.FC = () => {
       const constructorCalldata = [vertices_x, vertices_y];
 
       // 4. Declare contract
-      const declareTx = await account.declare({ contract: contractClass });
+      const declareTx = await account.declare({ 
+        contract: contractClass,
+        casm: compiledContractClass
+      });
       // Wait for declaration (optional: poll or just proceed)
       // 5. Deploy contract
       const deployTx = await account.deploy({ classHash: declareTx.class_hash, constructorCalldata });
