@@ -5,6 +5,10 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
 
 // https://vite.dev/config/
 export default defineConfig({
+  optimizeDeps: {
+    esbuildOptions: { target: "esnext" },
+    exclude: ['@noir-lang/noirc_abi', '@noir-lang/acvm_js']
+  },
   plugins: [
     react(),
     basicSsl(),
