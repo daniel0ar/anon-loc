@@ -1,2 +1,35 @@
 node_modules/
 .env
+
+# Node.js
+npm-debug.log
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.npm
+.yarn-integrity
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+dist/
+build/
+*.tsbuildinfo
+.DS_Store
+
+# Nargo & Cairo
+target/
+artifacts/
+sierra/
+
+# Starknet
+.starknet
+starknet-artifacts/
+.starknet-accounts/
+
+# Environment variables
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
