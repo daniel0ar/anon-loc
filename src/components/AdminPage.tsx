@@ -12,6 +12,9 @@ const AdminPage: React.FC = () => {
     { ...emptyVertex },
   ]);
   const [saved, setSaved] = useState(false);
+  const [deploying, setDeploying] = useState(false);
+  const [deployError, setDeployError] = useState<string | null>(null);
+  const [deployedAddress, setDeployedAddress] = useState<string | null>(null);
 
   const { address, isConnected } = useAccount();
   const { connect, connectors, isPending } = useConnect();
@@ -29,6 +32,42 @@ const AdminPage: React.FC = () => {
     e.preventDefault();
     setSaved(true);
     console.log('Polygon vertices:', vertices);
+  };
+
+  // Helper to convert JS numbers to felt252 strings
+  const toFeltArray = (arr: number[]) => arr.map((n) => n.toString());
+
+  // Deploy region verifier contract using Bravo wallet
+  const handleDeploy = async () => {
+    setDeploying(true);
+    setDeployError(null);
+    setDeployedAddress(null);
+    try {
+      // 1. Load contract class artifact dynamically (works in browser)
+      const contractClass = (await import('../contracts/target/dev/region_verifier_UltraKeccakZKHonkVerifier.contract_class.json')).default;
+
+      // 2. Connect to Bravo wallet
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const starknet: any = await (window as any).starknet?.enable?.() ? (window as any).starknet : null;
+      if (!starknet) throw new Error('Bravo wallet not found or connection rejected.');
+      const account = starknet.account;
+      if (!account) throw new Error('Bravo wallet account not found.');
+      // 3. Prepare constructor calldata from vertices
+      const vertices_x = toFeltArray(vertices.map((v) => v.x));
+      const vertices_y = toFeltArray(vertices.map((v) => v.y));
+      const constructorCalldata = [vertices_x, vertices_y];
+
+      // 4. Declare contract
+      const declareTx = await account.declare({ contract: contractClass });
+      // Wait for declaration (optional: poll or just proceed)
+      // 5. Deploy contract
+      const deployTx = await account.deploy({ classHash: declareTx.class_hash, constructorCalldata });
+      setDeployedAddress(deployTx.contract_address);
+    } catch (err: unknown) {
+      setDeployError((err as Error).message || 'Deployment failed');
+    } finally {
+      setDeploying(false);
+    }
   };
 
   return (
@@ -97,6 +136,22 @@ const AdminPage: React.FC = () => {
             </div>
           ))}
         </div>
+      </div>
+      <div style={{ marginTop: 32 }}>
+        <button
+          onClick={handleDeploy}
+          className="primary-button"
+          style={{ width: '100%', padding: '0.75rem', background: '#4285f4' }}
+          disabled={deploying || !isConnected}
+        >
+          {deploying ? 'Deploying Region Verifier...' : 'Deploy Region Verifier Contract'}
+        </button>
+        {deployError && <div style={{ color: 'red', marginTop: 12 }}>{deployError}</div>}
+        {deployedAddress && (
+          <div style={{ color: 'green', marginTop: 12 }}>
+            Contract deployed at: <code>{deployedAddress}</code>
+          </div>
+        )}
       </div>
     </div>
   );
