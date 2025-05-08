@@ -20,6 +20,7 @@ build/
 
 # Nargo & Cairo
 target/
+!src/contracts/target/
 artifacts/
 sierra/
 
