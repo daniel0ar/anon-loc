@@ -1,5 +1,5 @@
-import init, { execute } from "../../noir/location-proof/location_proof.js";
-import acir from "../../noir/location-proof/location_proof.acir";
+import init, { execute } from "../../noir/gpr/location_proof.js";
+import acir from "../../noir/gpr/location_proof.acir";
 import type { NoirRegion, NoirPoint } from "../types";
 
 type Input = {
