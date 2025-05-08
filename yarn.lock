@@ -3975,7 +3975,7 @@ sourcemap-codec@^1.4.8:
 
 starknet@^6.24.1:
   version "6.24.1"
-  resolved "https://registry.npmjs.org/starknet/-/starknet-6.24.1.tgz"
+  resolved "https://registry.yarnpkg.com/starknet/-/starknet-6.24.1.tgz#87333339795038e93ef32a20726b5272ddb78fe1"
   integrity sha512-g7tiCt73berhcNi41otlN3T3kxZnIvZhMi8WdC21Y6GC6zoQgbI2z1t7JAZF9c4xZiomlanwVnurcpyfEdyMpg==
   dependencies:
     "@noble/curves" "1.7.0"
