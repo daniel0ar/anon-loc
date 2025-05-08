@@ -3,6 +3,28 @@ Private location proving widget
 
 ## Installation
 
+First, compile the circuits using Nargo:
+```sh
+cd src/circuits
+nargo compile
+```
+Then, run the server:
+```sh
+cd ../../
+pnpm run dev
+#or
+npm run dev
+#or
+yarn dev
+```
+
+This app aims to be used on mobile devices, so it's recommended to use a tunnel:
+```sh
+yarn dev -- --host
+#or
+ngrok http 3000
+```
+
 ## Development
 ### Repo structure
 ```
