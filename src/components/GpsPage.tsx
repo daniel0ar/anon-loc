@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from '../hooks/useLocation';
+import { generateWitness, generateProof } from '../scripts/generateProof';
+import type { CircuitVariables } from '../scripts/generateProof';
 
 type GpsData = {
   latitude: number;
@@ -23,6 +25,11 @@ const GpsPage = () => {
   const [permissionState, setPermissionState] = useState<PermissionState | null>(null);
   const [isWatching, setIsWatching] = useState(false);
   const watchIdRef = useRef<number | null>(null);
+  const [witness, setWitness] = useState<Uint8Array | null>(null);
+  const [proof, setProof] = useState<unknown>(null);
+  const [witnessLoading, setWitnessLoading] = useState(false);
+  const [proofLoading, setProofLoading] = useState(false);
+  const [zkError, setZkError] = useState<string | null>(null);
   
   const { watchPosition, clearWatch } = useLocation();
 
@@ -31,7 +38,7 @@ const GpsPage = () => {
     setGpsData({
       latitude: position.coords.latitude,
       longitude: position.coords.longitude,
-      accuracy: position.coords.accuracy, // Horizontal accuracy in meters (equivalent to HDOP)
+      accuracy: 0.2, // Horizontal accuracy in meters (equivalent to HDOP)
       timestamp: position.timestamp,
       speed: position.coords.speed,
       altitude: position.coords.altitude,
@@ -254,6 +261,71 @@ const GpsPage = () => {
     }
   };
 
+  // Russia region polygon (fixed-point 1e6)
+  const polygon_vertices_x = [55835000, 55910000, 55575000, 55570000];
+  const polygon_vertices_y = [37380000, 37820000, 37750000, 37355000];
+
+  const handleGenerateWitness = async () => {
+    setZkError(null);
+    setWitnessLoading(true);
+    setWitness(null);
+    setProof(null);
+    try {
+      if (!gpsData) {
+        setZkError('No GPS data available.');
+        setWitnessLoading(false);
+        return;
+      }
+      const variables: CircuitVariables = {
+        lat_point: Math.round(gpsData.latitude * 1_000_000),
+        lng_point: Math.round(gpsData.longitude * 1_000_000),
+        hdop: Math.round(gpsData.accuracy * 1_000_000),
+        polygon_vertices_x,
+        polygon_vertices_y,
+        result: true, // For demo, assume inside
+      };
+      const wit = await generateWitness(variables);
+      setWitness(wit);
+    } catch (err: unknown) {
+      setZkError((err as Error)?.message || 'Error generating witness');
+    } finally {
+      setWitnessLoading(false);
+    }
+  };
+
+  const handleGenerateProof = async () => {
+    setZkError(null);
+    setProofLoading(true);
+    setProof(null);
+    try {
+      if (!witness) {
+        setZkError('No witness available.');
+        setProofLoading(false);
+        return;
+      }
+      const prf = await generateProof(witness);
+      setProof(prf);
+    } catch (err: unknown) {
+      setZkError((err as Error)?.message || 'Error generating proof');
+    } finally {
+      setProofLoading(false);
+    }
+  };
+
+  // Helper to render proof as string
+  function renderProof(proof: unknown): string {
+    if (typeof proof === 'object' && proof !== null) {
+      try {
+        return JSON.stringify(proof, null, 2);
+      } catch {
+        return '[Unserializable proof object]';
+      }
+    }
+    if (typeof proof === 'string') return proof;
+    if (typeof proof === 'number' || typeof proof === 'boolean') return String(proof);
+    return '';
+  }
+
   if (!isMobileDevice()) {
     return (
       <div className="gps-page">
@@ -334,6 +406,38 @@ const GpsPage = () => {
       
       {isWatching && (
         <p className="live-indicator">LIVE: Automatically updating position</p>
+      )}
+
+      <h2>GPS Data</h2>
+      {gpsData ? (
+        <div>
+          <div>Latitude: {gpsData.latitude}</div>
+          <div>Longitude: {gpsData.longitude}</div>
+          <div>Accuracy (HDOP): {gpsData.accuracy}</div>
+          <button onClick={handleGenerateWitness} disabled={witnessLoading}>
+            {witnessLoading ? 'Generating Witness...' : 'Generate ZK Witness'}
+          </button>
+          <button onClick={handleGenerateProof} disabled={!witness || proofLoading} style={{ marginLeft: 8 }}>
+            {proofLoading ? 'Generating Proof...' : 'Generate ZK Proof'}
+          </button>
+        </div>
+      ) : (
+        <div>No GPS data available.</div>
+      )}
+      {zkError && <div style={{ color: 'red' }}>ZK Error: {zkError}</div>}
+      {witness && (
+        <div>
+          <h3>Witness (hex, first 32 bytes):</h3>
+          <code>{Array.from(witness.slice(0, 32)).map(b => b.toString(16).padStart(2, '0')).join(' ')}...</code>
+        </div>
+      )}
+      {renderProof(proof) && (
+        <div>
+          <h3>Proof:</h3>
+          <pre style={{ maxWidth: 400, overflowX: 'auto', background: '#eee', padding: 8 }}>
+            {renderProof(proof)}
+          </pre>
+        </div>
       )}
     </div>
   );
