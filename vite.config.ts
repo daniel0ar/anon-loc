@@ -10,6 +10,14 @@ export default defineConfig({
     esbuildOptions: { target: "esnext" },
     exclude: ['@noir-lang/noirc_abi', '@noir-lang/acvm_js']
   },
+  build: {
+    target: 'esnext', // builds for modern browsers
+    rollupOptions: {
+      output: {
+        manualChunks: undefined // simplify chunking strategy
+      }
+    }
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -38,7 +46,6 @@ export default defineConfig({
     })
   ],
   server: {
-    https: true,
-    host: true // Makes your app accessible from your local network
+    host: true // Makes our app accessible from your local network
   }
 })
