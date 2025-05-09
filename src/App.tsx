@@ -30,7 +30,7 @@ function App() {
                 className="flex items-center space-x-3 rtl:space-x-reverse"
               >
                 <img
-                  src="/src/assets/logo.svg"
+                  src="/src/assets/logo-black.svg"
                   className="h-6"
                   alt="GPR Logo"
                 />
