@@ -38,7 +38,7 @@ const GpsPage = () => {
     setGpsData({
       latitude: position.coords.latitude,
       longitude: position.coords.longitude,
-      accuracy: 0.1, // Horizontal accuracy in meters (equivalent to HDOP)
+      accuracy: 0.2, // Horizontal accuracy in meters (equivalent to HDOP)
       timestamp: position.timestamp,
       speed: position.coords.speed,
       altitude: position.coords.altitude,
@@ -262,8 +262,8 @@ const GpsPage = () => {
   };
 
   // Sankt Peterburg region polygon (fixed-point 1e6)
-  const polygon_vertices_x = [60050000, 60090000, 59800000, 59830000];
-  const polygon_vertices_y = [30050000, 30550000, 30650000, 30050000];
+  const polygon_vertices_x = [60234000, 60234000, 59642000, 59642000];
+  const polygon_vertices_y = [29424000, 30793000, 30793000, 29424000];
 
   const handleGenerateWitness = async () => {
     setZkError(null);
