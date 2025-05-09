@@ -5,6 +5,7 @@ import AdminPage from "./components/AdminPage";
 import { StarknetConfig, publicProvider, braavos } from "@starknet-react/core";
 import { mainnet, sepolia } from "@starknet-react/chains";
 import { useState } from "react";
+import HomePage from "./components/HomePage";
 
 function App() {
   const connectors = [braavos()];
@@ -21,6 +22,7 @@ function App() {
       connectors={connectors}
     >
       <Router>
+        <div className="bg-white dark:bg-gray-950 text-black dark:text-white min-h-screen">
           <nav className="bg-white dark:bg-gray-900 sticky w-full z-20 top-0 start-0 border-b border-gray-200 dark:border-gray-600">
             <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
               <a
@@ -102,8 +104,9 @@ function App() {
           <Routes>
             <Route path="/gps" element={<GpsPage />} />
             <Route path="/admin" element={<AdminPage />} />
-            <Route path="/" element={<div>Home Page</div>} />
+            <Route path="/" element={<HomePage />} />
           </Routes>
+        </div>
       </Router>
     </StarknetConfig>
   );
