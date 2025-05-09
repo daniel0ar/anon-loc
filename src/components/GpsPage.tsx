@@ -329,15 +329,15 @@ const GpsPage = () => {
   if (!isMobileDevice()) {
     return (
       <div className="container mx-auto max-w-2xl px-4 py-8">
-        <h1 className="text-3xl font-bold text-center text-gray-800 mb-4">GPS Data</h1>
-        <p className="text-center text-gray-600">This feature is only available on mobile devices.</p>
+        <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-gray-50 mb-4">GPS Data</h1>
+        <p className="text-center text-gray-600 dark:text-gray-100 ">This feature is only available on mobile devices.</p>
       </div>
     );
   }
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8">
-      <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">GPS Data</h1>
+      <h1 className="text-3xl font-bold text-center text-gray-800  dark:text-gray-50 mb-6">GPS Data</h1>
       
       {!window.isSecureContext && (
         <div className="bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-4">
@@ -358,12 +358,12 @@ const GpsPage = () => {
         </div>
       )}
       
-      {loading && <p className="text-center text-gray-600">Loading GPS data...</p>}
+      {loading && <p className="text-center text-gray-600  dark:text-gray-100">Loading GPS data...</p>}
       
       {error && <p className="text-red-500 text-center">{error}</p>}
       
       {!loading && !error && gpsData && (
-        <div className="bg-white shadow-md rounded-lg p-6 mb-6">
+        <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 mb-6">
           <p className="mb-2"><strong>Latitude:</strong> {gpsData.latitude.toFixed(6)}</p>
           <p className="mb-2"><strong>Longitude:</strong> {gpsData.longitude.toFixed(6)}</p>
           <p className="mb-2"><strong>HDOP (Accuracy):</strong> {gpsData.accuracy.toFixed(2)} meters</p>
@@ -407,9 +407,9 @@ const GpsPage = () => {
         <p className="text-center text-green-500 font-semibold">LIVE: Automatically updating position</p>
       )}
 
-      <h2 className="text-2xl font-bold text-center text-gray-800 mt-8 mb-4">GPS Data</h2>
+      <h2 className="text-2xl font-bold text-center text-gray-800  dark:text-gray-50 mt-8 mb-4">GPS Data</h2>
       {gpsData ? (
-        <div className="bg-white shadow-md rounded-lg p-6">
+        <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
           <div className="mb-2">Latitude: {gpsData.latitude}</div>
           <div className="mb-2">Longitude: {gpsData.longitude}</div>
           <div className="mb-4">Accuracy (HDOP): {gpsData.accuracy}</div>
@@ -431,7 +431,7 @@ const GpsPage = () => {
           </div>
         </div>
       ) : (
-        <div className="text-center text-gray-600">No GPS data available.</div>
+        <div className="text-center text-gray-600  dark:text-gray-100">No GPS data available.</div>
       )}
       {zkError && <div className="text-red-500 mt-4">ZK Error: {zkError}</div>}
       {witness && (
