@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite'
+import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import basicSsl from '@vitejs/plugin-basic-ssl'
@@ -11,6 +12,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    tailwindcss(),
     basicSsl(),
     VitePWA({
       registerType: 'autoUpdate',
