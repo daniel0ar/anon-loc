@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from '../hooks/useLocation';
 import { generateWitness, generateProof } from '../scripts/generateProof';
+import { verifyProof } from '../scripts/verifyProof';
+import type { Proof } from '../scripts/verifyProof';
 import type { CircuitVariables } from '../scripts/generateProof';
 
 type GpsData = {
@@ -26,10 +28,12 @@ const GpsPage = () => {
   const [isWatching, setIsWatching] = useState(false);
   const watchIdRef = useRef<number | null>(null);
   const [witness, setWitness] = useState<Uint8Array | null>(null);
-  const [proof, setProof] = useState<unknown>(null);
+  const [proof, setProof] = useState<Proof | null>(null);
   const [witnessLoading, setWitnessLoading] = useState(false);
   const [proofLoading, setProofLoading] = useState(false);
   const [zkError, setZkError] = useState<string | null>(null);
+  const [verificationLoading, setVerificationLoading] = useState(false);
+  const [verificationResult, setVerificationResult] = useState<boolean | null>(null);
   
   const { watchPosition, clearWatch } = useLocation();
 
@@ -304,7 +308,8 @@ const GpsPage = () => {
         return;
       }
       const prf = await generateProof(witness);
-      setProof(prf);
+      // Convert the proof to a compatible format - using 'unknown' as intermediate
+      setProof(prf as unknown as Proof);
     } catch (err: unknown) {
       setZkError((err as Error)?.message || 'Error generating proof');
     } finally {
@@ -312,8 +317,34 @@ const GpsPage = () => {
     }
   };
 
+  // Hardcoded contract address for the RegionVerifier contract
+  const REGION_VERIFIER_CONTRACT_ADDRESS = "0x123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+  
+  const handleVerifyProof = async () => {
+    setZkError(null);
+    setVerificationLoading(true);
+    setVerificationResult(null);
+    
+    try {
+      if (!proof) {
+        setZkError('No proof available to verify.');
+        setVerificationLoading(false);
+        return;
+      }
+      
+      // Use hardcoded contract address
+      const result = await verifyProof(REGION_VERIFIER_CONTRACT_ADDRESS, proof);
+      setVerificationResult(result);
+    } catch (err: unknown) {
+      setZkError((err as Error)?.message || 'Error verifying proof on-chain');
+    } finally {
+      setVerificationLoading(false);
+    }
+  };
+
   // Helper to render proof as string
   function renderProof(proof: unknown): string {
+    if (!proof) return '';
     if (typeof proof === 'object' && proof !== null) {
       try {
         return JSON.stringify(proof, null, 2);
@@ -428,6 +459,15 @@ const GpsPage = () => {
             >
               {proofLoading ? 'Generating Proof...' : 'Generate ZK Proof'}
             </button>
+            {proof && (
+              <button
+                onClick={handleVerifyProof}
+                disabled={verificationLoading}
+                className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg disabled:opacity-50"
+              >
+                {verificationLoading ? 'Verifying...' : 'Verify On-Chain'}
+              </button>
+            )}
           </div>
         </div>
       ) : (
@@ -442,12 +482,26 @@ const GpsPage = () => {
           </code>
         </div>
       )}
-      {renderProof(proof) && (
+      {renderProof(proof) ? (
         <div className="mt-6">
           <h3 className="text-xl font-semibold mb-2">Proof:</h3>
           <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto max-w-full">
             {renderProof(proof)}
           </pre>
+        </div>
+      ) : null}
+
+      {/* Display verification result */}
+      {verificationResult !== null && (
+        <div className={`mt-6 p-4 rounded-lg ${verificationResult ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+          <p className="font-semibold text-center">
+            {verificationResult 
+              ? 'Proof is valid! Your location is verified on-chain.' 
+              : 'Proof verification failed. Your location could not be verified.'}
+          </p>
+          <p className="text-center text-sm mt-2">
+            Contract: {REGION_VERIFIER_CONTRACT_ADDRESS.substring(0, 8)}...{REGION_VERIFIER_CONTRACT_ADDRESS.substring(REGION_VERIFIER_CONTRACT_ADDRESS.length - 8)}
+          </p>
         </div>
       )}
     </div>
