@@ -16,7 +16,7 @@ const AdminPage: React.FC = () => {
   const [deploying, setDeploying] = useState(false);
   const [deployError, setDeployError] = useState<string | null>(null);
   const [deployedAddress, setDeployedAddress] = useState<string | null>(null);
-  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 768);
+  const [, setIsDesktop] = useState(window.innerWidth >= 768); // TODO: Do something with desktop detection
 
   const { address, isConnected } = useAccount();
   const { connect, connectors, isPending } = useConnect();
