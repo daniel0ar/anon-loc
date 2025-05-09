@@ -328,20 +328,20 @@ const GpsPage = () => {
 
   if (!isMobileDevice()) {
     return (
-      <div className="gps-page">
-        <h1>GPS Data</h1>
-        <p>This feature is only available on mobile devices.</p>
+      <div className="container mx-auto max-w-2xl px-4 py-8">
+        <h1 className="text-3xl font-bold text-center text-gray-800 mb-4">GPS Data</h1>
+        <p className="text-center text-gray-600">This feature is only available on mobile devices.</p>
       </div>
     );
   }
 
   return (
-    <div className="gps-page">
-      <h1>GPS Data</h1>
+    <div className="container mx-auto max-w-2xl px-4 py-8">
+      <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">GPS Data</h1>
       
       {!window.isSecureContext && (
-        <div className="security-warning">
-          <p className="error">
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-4">
+          <p className="text-yellow-700">
             <strong>Security Notice:</strong> Location services require a secure connection (HTTPS).
             {window.location.protocol === 'http:' && 
               ` Try accessing this site via HTTPS: ${window.location.href.replace('http:', 'https:')}`
@@ -353,35 +353,35 @@ const GpsPage = () => {
       {renderPermissionStatus()}
       
       {!gpsData && !loading && !error && (
-        <div className="info-box">
-          <p>To show your GPS location, tap the button below and allow location access when prompted.</p>
+        <div className="bg-blue-50 p-4 rounded-lg mb-4">
+          <p className="text-blue-700">To show your GPS location, tap the button below and allow location access when prompted.</p>
         </div>
       )}
       
-      {loading && <p className="loading">Loading GPS data...</p>}
+      {loading && <p className="text-center text-gray-600">Loading GPS data...</p>}
       
-      {error && <p className="error">{error}</p>}
+      {error && <p className="text-red-500 text-center">{error}</p>}
       
       {!loading && !error && gpsData && (
-        <div className="gps-data">
-          <p><strong>Latitude:</strong> {gpsData.latitude.toFixed(6)}</p>
-          <p><strong>Longitude:</strong> {gpsData.longitude.toFixed(6)}</p>
-          <p><strong>HDOP (Accuracy):</strong> {gpsData.accuracy.toFixed(2)} meters</p>
-          <p><strong>Timestamp:</strong> {new Date(gpsData.timestamp).toLocaleString()}</p>
+        <div className="bg-white shadow-md rounded-lg p-6 mb-6">
+          <p className="mb-2"><strong>Latitude:</strong> {gpsData.latitude.toFixed(6)}</p>
+          <p className="mb-2"><strong>Longitude:</strong> {gpsData.longitude.toFixed(6)}</p>
+          <p className="mb-2"><strong>HDOP (Accuracy):</strong> {gpsData.accuracy.toFixed(2)} meters</p>
+          <p className="mb-2"><strong>Timestamp:</strong> {new Date(gpsData.timestamp).toLocaleString()}</p>
           {gpsData.speed !== null && (
-            <p><strong>Speed:</strong> {gpsData.speed.toFixed(2)} m/s</p>
+            <p className="mb-2"><strong>Speed:</strong> {gpsData.speed.toFixed(2)} m/s</p>
           )}
           {gpsData.altitude !== null && (
-            <p><strong>Altitude:</strong> {gpsData.altitude.toFixed(2)} meters</p>
+            <p className="mb-2"><strong>Altitude:</strong> {gpsData.altitude.toFixed(2)} meters</p>
           )}
         </div>
       )}
 
-      <div className="button-group">
+      <div className="flex flex-col items-center gap-4 mb-6">
         <button 
           onClick={getGpsData}
           disabled={loading || isWatching}
-          className="primary-button get-gps-button"
+          className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed w-full max-w-sm"
           aria-label="Get location data"
         >
           {gpsData ? 'Refresh GPS Data' : 'Get My Location'}
@@ -391,8 +391,7 @@ const GpsPage = () => {
           <button
             onClick={toggleWatchPosition}
             disabled={loading}
-            className={`primary-button ${isWatching ? 'active' : ''}`}
-            style={{ marginTop: '10px' }}
+            className={`bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed w-full max-w-sm ${isWatching ? 'bg-red-500 hover:bg-red-600' : ''}`}
             aria-label={isWatching ? 'Stop tracking location' : 'Start tracking location'}
           >
             {isWatching ? 'Stop Tracking Location' : 'Track Location (Live)'}
@@ -401,40 +400,52 @@ const GpsPage = () => {
       </div>
       
       {gpsData && !isWatching && (
-        <p className="timestamp">Last updated: {new Date().toLocaleString()}</p>
+        <p className="text-center text-gray-500 text-sm">Last updated: {new Date().toLocaleString()}</p>
       )}
       
       {isWatching && (
-        <p className="live-indicator">LIVE: Automatically updating position</p>
+        <p className="text-center text-green-500 font-semibold">LIVE: Automatically updating position</p>
       )}
 
-      <h2>GPS Data</h2>
+      <h2 className="text-2xl font-bold text-center text-gray-800 mt-8 mb-4">GPS Data</h2>
       {gpsData ? (
-        <div>
-          <div>Latitude: {gpsData.latitude}</div>
-          <div>Longitude: {gpsData.longitude}</div>
-          <div>Accuracy (HDOP): {gpsData.accuracy}</div>
-          <button onClick={handleGenerateWitness} disabled={witnessLoading}>
-            {witnessLoading ? 'Generating Witness...' : 'Generate ZK Witness'}
-          </button>
-          <button onClick={handleGenerateProof} disabled={!witness || proofLoading} style={{ marginLeft: 8 }}>
-            {proofLoading ? 'Generating Proof...' : 'Generate ZK Proof'}
-          </button>
+        <div className="bg-white shadow-md rounded-lg p-6">
+          <div className="mb-2">Latitude: {gpsData.latitude}</div>
+          <div className="mb-2">Longitude: {gpsData.longitude}</div>
+          <div className="mb-4">Accuracy (HDOP): {gpsData.accuracy}</div>
+          <div className="flex flex-wrap gap-4 justify-center">
+            <button 
+              onClick={handleGenerateWitness} 
+              disabled={witnessLoading}
+              className="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg disabled:opacity-50"
+            >
+              {witnessLoading ? 'Generating Witness...' : 'Generate ZK Witness'}
+            </button>
+            <button 
+              onClick={handleGenerateProof} 
+              disabled={!witness || proofLoading}
+              className="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg disabled:opacity-50"
+            >
+              {proofLoading ? 'Generating Proof...' : 'Generate ZK Proof'}
+            </button>
+          </div>
         </div>
       ) : (
-        <div>No GPS data available.</div>
+        <div className="text-center text-gray-600">No GPS data available.</div>
       )}
-      {zkError && <div style={{ color: 'red' }}>ZK Error: {zkError}</div>}
+      {zkError && <div className="text-red-500 mt-4">ZK Error: {zkError}</div>}
       {witness && (
-        <div>
-          <h3>Witness (hex, first 32 bytes):</h3>
-          <code>{Array.from(witness.slice(0, 32)).map(b => b.toString(16).padStart(2, '0')).join(' ')}...</code>
+        <div className="mt-6">
+          <h3 className="text-xl font-semibold mb-2">Witness (hex, first 32 bytes):</h3>
+          <code className="block bg-gray-100 p-4 rounded-lg overflow-x-auto">
+            {Array.from(witness.slice(0, 32)).map(b => b.toString(16).padStart(2, '0')).join(' ')}...
+          </code>
         </div>
       )}
       {renderProof(proof) && (
-        <div>
-          <h3>Proof:</h3>
-          <pre style={{ maxWidth: 400, overflowX: 'auto', background: '#eee', padding: 8 }}>
+        <div className="mt-6">
+          <h3 className="text-xl font-semibold mb-2">Proof:</h3>
+          <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto max-w-full">
             {renderProof(proof)}
           </pre>
         </div>
@@ -443,4 +454,4 @@ const GpsPage = () => {
   );
 };
 
-export default GpsPage; 
+export default GpsPage;
