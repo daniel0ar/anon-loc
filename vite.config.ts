@@ -11,10 +11,16 @@ export default defineConfig({
     exclude: ['@noir-lang/noirc_abi', '@noir-lang/acvm_js']
   },
   build: {
-    target: 'esnext', // builds for modern browsers
+    target: 'esnext',
     rollupOptions: {
       output: {
-        manualChunks: undefined // simplify chunking strategy
+        manualChunks: {
+          // Split large dependencies into separate chunks
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          noir: ['@noir-lang/noir_js'],
+          aztec: ['@aztec/bb.js'],
+          leaflet: ['leaflet', 'react-leaflet']
+        }
       }
     }
   },
@@ -25,6 +31,25 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      workbox: {
+        // Increase the maximum file size limit for precaching
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MB
+        // Alternatively, you can exclude large files from precaching
+        // and they will be cached at runtime instead
+        runtimeCaching: [
+          {
+            urlPattern: /\.js$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'js-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+              }
+            }
+          }
+        ]
+      },
       manifest: {
         name: 'NoLoc GPS App',
         short_name: 'NoLoc GPS',
