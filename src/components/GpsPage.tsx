@@ -265,7 +265,7 @@ const GpsPage = () => {
     }
   };
 
-  // Sankt Peterburg region polygon (fixed-point 1e6)
+  // Europe continent polygon (fixed-point 1e6)
   const polygon_vertices_x = [-25000000, 45000000, 45000000, -25000000];
   const polygon_vertices_y = [35000000, 35000000, 71000000, 71000000];
 
